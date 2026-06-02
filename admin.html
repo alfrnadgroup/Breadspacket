@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>لوحة طلبات Bread Packet</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800&display=swap" rel="stylesheet">
+
+<style>
+
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+font-family:'Tajawal',sans-serif;
+}
+
+body{
+background:#f4f1eb;
+padding:20px;
+color:#2d2418;
+}
+
+.header{
+background:#8b5e3c;
+color:white;
+padding:20px;
+border-radius:15px;
+margin-bottom:20px;
+text-align:center;
+}
+
+.stats{
+display:flex;
+gap:15px;
+margin-bottom:20px;
+flex-wrap:wrap;
+}
+
+.card{
+flex:1;
+min-width:200px;
+background:white;
+padding:20px;
+border-radius:15px;
+box-shadow:0 4px 12px rgba(0,0,0,.08);
+text-align:center;
+}
+
+.card h2{
+color:#8b5e3c;
+margin-top:10px;
+}
+
+.table-container{
+background:white;
+border-radius:15px;
+overflow:auto;
+box-shadow:0 4px 12px rgba(0,0,0,.08);
+}
+
+table{
+width:100%;
+border-collapse:collapse;
+min-width:1000px;
+}
+
+th{
+background:#8b5e3c;
+color:white;
+padding:15px;
+}
+
+td{
+padding:12px;
+border-bottom:1px solid #eee;
+}
+
+tr:hover{
+background:#fafafa;
+}
+
+.status-paid{
+background:#d4edda;
+color:#155724;
+padding:5px 10px;
+border-radius:8px;
+font-weight:bold;
+}
+
+.status-phone{
+background:#fff3cd;
+color:#856404;
+padding:5px 10px;
+border-radius:8px;
+font-weight:bold;
+}
+
+.refresh-btn{
+background:#8b5e3c;
+color:white;
+border:none;
+padding:12px 20px;
+border-radius:10px;
+cursor:pointer;
+margin-bottom:15px;
+font-size:16px;
+}
+
+.refresh-btn:hover{
+opacity:.9;
+}
+
+.empty{
+text-align:center;
+padding:40px;
+font-size:18px;
+color:#777;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="header">
+<h1>لوحة طلبات Bread Packet 🥖</h1>
+<p>متابعة الطلبات اليومية للمخبز</p>
+</div>
+
+<div class="stats">
+
+<div class="card">
+<div>عدد الطلبات</div>
+<h2 id="ordersCount">0</h2>
+</div>
+
+<div class="card">
+<div>إجمالي المبيعات</div>
+<h2 id="totalSales">0.000 ر.ع</h2>
+</div>
+
+<div class="card">
+<div>طلبات الهاتف</div>
+<h2 id="phoneOrders">0</h2>
+</div>
+
+</div>
+
+<button class="refresh-btn" onclick="loadOrders()">
+تحديث الطلبات
+</button>
+
+<div class="table-container">
+
+<table>
+
+<thead>
+<tr>
+<th>#</th>
+<th>الاسم</th>
+<th>الهاتف</th>
+<th>العنوان</th>
+<th>الطلبات</th>
+<th>الإجمالي</th>
+<th>الحالة</th>
+<th>التاريخ</th>
+</tr>
+</thead>
+
+<tbody id="ordersBody">
+
+<tr>
+<td colspan="8" class="empty">
+جاري تحميل الطلبات...
+</td>
+</tr>
+
+</tbody>
+
+</table>
+
+</div>
+
+<script>
+
+function loadOrders(){
+
+fetch("/orders")
+.then(res => res.json())
+.then(data => {
+
+let tbody = document.getElementById("ordersBody");
+tbody.innerHTML = "";
+
+let totalSales = 0;
+let phoneOrders = 0;
+
+if(data.length === 0){
+tbody.innerHTML = `
+<tr>
+<td colspan="8" class="empty">
+لا توجد طلبات حتى الآن
+</td>
+</tr>
+`;
+
+document.getElementById("ordersCount").innerText = "0";
+document.getElementById("totalSales").innerText = "0.000 ر.ع";
+document.getElementById("phoneOrders").innerText = "0";
+return;
+}
+
+data.forEach(order => {
+
+totalSales += parseFloat(order.total || 0);
+
+if(order.status === "Phone Payment"){
+phoneOrders++;
+}
+
+let statusClass = order.status === "Paid"
+? "status-paid"
+: "status-phone";
+
+tbody.innerHTML += `
+<tr>
+<td>${order.id}</td>
+<td>${order.name || ""}</td>
+<td>${order.phone || ""}</td>
+<td>${order.address || ""}</td>
+<td>${order.items || ""}</td>
+<td>${order.total || 0} ر.ع</td>
+<td><span class="${statusClass}">${order.status}</span></td>
+<td>${order.created_at || ""}</td>
+</tr>
+`;
+
+});
+
+document.getElementById("ordersCount").innerText = data.length;
+document.getElementById("totalSales").innerText = totalSales.toFixed(3) + " ر.ع";
+document.getElementById("phoneOrders").innerText = phoneOrders;
+
+})
+.catch(err => {
+
+console.error(err);
+
+document.getElementById("ordersBody").innerHTML = `
+<tr>
+<td colspan="8" class="empty">
+فشل تحميل الطلبات
+</td>
+</tr>
+`;
+
+});
+
+}
+
+loadOrders();
+setInterval(loadOrders, 30000);
+
+</script>
+
+</body>
+  </html>
